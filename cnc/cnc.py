@@ -1,29 +1,19 @@
-import fastapi
-from fastapi.responses import PlainTextResponse
-from fastapi import UploadFile, File
+from fastapi import FastAPI, Request
 from pathlib import Path
-import datetime
+import json
 
-SCREENSHOT_PATH = "./collected_files/"
-app = fastapi.FastAPI()
-
-@app.post("/")
-async def root(file: UploadFile = File(...)):
-    contents = await file.read()
-    print(contents.decode())
-    return PlainTextResponse(contents.decode("utf-8"))
-
-@app.post("/screenshot")
-async def receive_screenshot(screenshot_sent: UploadFile = File(...)):
-    file_name = screenshot_sent.filename
-    file_content = await screenshot_sent.read()
-
-    saved_file = Path(SCREENSHOT_PATH + file_name)
-    saved_file.open("w")
-    saved_file.write_bytes(file_content)
+app = FastAPI(title="FastAPI Project", version="1.0.0")
 
 
+@app.get("/api/commands")
+def read_root():
+    contents = Path("commands.json").read_text()
+    response = json.loads(contents)
+    return response
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.post("/api/commands_output")
+async def output(request: Request):
+    commands_output = await request.json()  # Read raw JSON from the request
+    Path("output.json").write_text(json.dumps(commands_output, indent=4))
+    return {"message": "Output saved successfully"}
